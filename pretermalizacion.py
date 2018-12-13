@@ -11,6 +11,7 @@ from ising2Dpaso import ising2Dpaso
 from En import En
 import time
 
+
 start = time.time()
 
 #Tamaño en x,
@@ -42,6 +43,9 @@ for n in np.arange(npasos - 1):
 x = np.arange(1, npasos + 1, 1)
 energia_promedio = np.cumsum(energia)/x
 magnet_promedio = np.cumsum(magnet)/x
+
+end = time.time()
+print("Tiempo de ejecución: {:.4}s".format(end-start))
 
 plt.figure("Energía promedio", clear=True)
 plt.plot(energia_promedio,"o")
