@@ -187,4 +187,26 @@ def ising_step(S, beta):
                     dM = dM + (spin_new - spin_old)
                     
     return S, dE, dM
-                    
+
+def initial_condition(condition, shape):
+    """
+    Returns the initial spin matrix S depending on condition.
+    
+    Parameters
+    ----------
+    condition : string
+        hot (random initial condition) or cold (arranged initial condition)
+    
+    shape : tuple of ints
+        The elements of the shape tuple give the lengths of the corresponding spin matrix dimensions.
+    """
+    
+    Lx, Ly = shape
+    if condition == "hot":
+        S = np.where(np.random.rand(Lx, Ly)>0.5, 1, -1)        
+    elif condition == "cold":
+        S = np.ones(shape)
+    else:
+        raise TypeError("Wrong condition")
+    
+    return S                    
