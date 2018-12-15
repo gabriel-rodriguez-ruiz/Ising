@@ -30,6 +30,8 @@ x
 
 """
 
+#%%
+
 def immediate_neighbours(S, i, j):
     """Returns 4 immediate neighbours of S[i,j] with periodic contour.
     
@@ -62,7 +64,10 @@ def immediate_neighbours(S, i, j):
     5
     >> immediate_neighbours(S, 1, 1)
     (6, 2, 4, 8)
-    >> 
+    >> S[1, 0]
+    4
+    >> immediate_neighbours(S, 1, 0)
+    (5, 1, 6, 7)
     """
     
     N, M = np.shape(S)
@@ -70,7 +75,7 @@ def immediate_neighbours(S, i, j):
     # Find immediate neighbours up and down
     if i != N - 1:
         inext = i + 1
-    else: # Periodic contour conditions (N+1 = 0)
+    else: # Periodic contour conditions (N+1 = 1)
         inext = 0
     if i != 0:
         iprevious = i - 1
@@ -83,9 +88,9 @@ def immediate_neighbours(S, i, j):
     # Find immediate neighbours up and down
     if j != M - 1:
         jnext = j + 1
-    else: # Periodic contour conditions (N+1 = 0)
+    else: # Periodic contour conditions (N+1 = 1)
         jnext = 0
-    if i != 0:
+    if j != 0:
         jprevious = j - 1
     else:
         jprevious = M - 1
@@ -94,9 +99,10 @@ def immediate_neighbours(S, i, j):
     
     return right, up, left, down
 
+#%%
+
 def energy(S):
-    """
-    Returns energy from a spin matrix S.
+    """Returns energy from a spin matrix S.
     
     Parameters
     ----------
@@ -127,17 +133,16 @@ def energy(S):
 
     return En
 
+#%%
 
 def ising_step(S, beta):
-    """
-    Executes one step in the Markov chain using Metropolis algorithm.
+    """Executes one step in the Markov chain using Metropolis algorithm.
     
     Parameters
     ----------
     S : np.array
         A 2D matrix with N rows (up-down xi index) and M columns 
         (right-left yi index).
-        
     beta : float
         The multiplicative inverse of the Temperature of the system.
         
@@ -146,67 +151,69 @@ def ising_step(S, beta):
     S : np.array
         A 2D matrix with N rows (up-down xi index) and M columns 
         (right-left yi index).
-        
     dE : np.array
-        Energy change accumulated.
-        
+        Accumulated energy change.
     dM : np.array
-        Magnetization change accumulated.
+        Accumulated magnetization change.
     """
     
-    Lx, Ly = np.shape(S)
+    N, M = np.shape(S)
     dE = 0  
     dM = 0 
     
     #For each place in the matrix S, a random spin flip will be proposed. 
-    for i in np.arange(Lx):
-        for j in np.arange(Ly):
+    for i in range(N):
+        for j in range(M):
             
             spin_old = S[i, j]
-            spin_new = -S[i, j]     #spin flip
+            spin_new = -S[i, j] # spin flip
             
             right, up, left, down = immediate_neighbours(S, i, j)
             
             #Partial energy difference
-            dE_partial = 2*spin_old * S[i,j] * (up + right + left + down)
+            dE_partial = 2 * spin_old * S[i,j] * (up+right+left+down)
             
             if dE<0:
-                #If energy decrease, spin flip will be accepted.
+                #If energy decreases, spin flip will be accepted.
                 S[i, j] = spin_new
                 dE = dE + dE_partial
                 dM = dM + (spin_new - spin_old)
             else:
-                #If energy increase, the change will be drawn.
+                #If energy increases, the change will be considered...
                 p = np.random.rand()
-                expbetaE = np.exp(-beta*dE)
+                expbetaE = np.exp(-beta * dE)
                 
-                if p<expbetaE:
-                    #Change will be accepted.
+                # Only if a random number is below exp(-beta*dE)...
+                if p < expbetaE:
+                    # ...change will be accepted.
                     S[i, j] = spin_new
                     dE = dE + dE_partial
                     dM = dM + (spin_new - spin_old)
                     
     return S, dE, dM
 
+#%%
+
 def initial_condition(condition, shape):
-    """
-    Returns the initial spin matrix S depending on condition.
+    """Returns the initial spin matrix S depending on condition.
     
     Parameters
     ----------
     condition : string
-        hot (random initial condition) or cold (arranged initial condition)
-    
+        Initial conditions' descriptor. Must be either 'hot' (random 
+        initial condition) or 'cold' (uniform initial condition full of 
+        parallel spins)
     shape : tuple of ints
-        The elements of the shape tuple give the lengths of the corresponding spin matrix dimensions.
+        Spin matrix dimensions. Each of its elements should be an int: 
+        (N, M) where N is the amount of rows (x-axis) and M is the 
+        amount of columns (y-axis).
     """
     
-    Lx, Ly = shape
     if condition == "hot":
-        S = np.where(np.random.rand(Lx, Ly)>0.5, 1, -1)        
+        S = np.where(np.random.rand(*shape) > 0.5, 1, -1)        
     elif condition == "cold":
         S = np.ones(shape)
     else:
-        raise TypeError("Wrong condition")
+        raise TypeError("Wrong condition. Must be 'hot' or 'cold'")
     
-    return S                    
+    return S
