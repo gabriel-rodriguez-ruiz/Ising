@@ -236,6 +236,7 @@ def ising_simulation_2D(S, beta, nsteps=1000):
     energy.append(energy_2D(S))
     magnetization.append(np.sum(S))
     
+    print("Running...")
     for n in range(nsteps):
         
         dE = 0  
@@ -273,6 +274,7 @@ def ising_simulation_2D(S, beta, nsteps=1000):
         S = new_S
         energy.append(energy[-1] + dE)
         magnetization.append(magnetization[-1] + dM)
+    print("Done running :)")
     
     energy = np.array(energy)
     magnetization = np.array(magnetization)

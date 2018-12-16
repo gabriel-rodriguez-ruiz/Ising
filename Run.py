@@ -55,6 +55,14 @@ plt.title("Estado final")
 plt.xlabel("X (u.a.)")
 plt.ylabel("Y (u.a.)")
 
+fig = plt.figure()
+fig.add_axes()
+ax = fig.gca()
+ax.pcolormesh(abs(Sf.T-S.T))
+plt.title("Diferencia")
+plt.xlabel("X (u.a.)")
+plt.ylabel("Y (u.a.)")
+
 #%% Some general plots
 
 """    
@@ -67,7 +75,6 @@ plt.figure()
 plt.subplot(2,1,1)
 plt.plot(energy, "o-")
 plt.ylabel("Energía")
-
 
 plt.subplot(2,1,2)
 plt.plot(magnetization, "o-")
