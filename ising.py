@@ -173,7 +173,7 @@ def ising_step_2D(S, beta):
             #Partial energy difference
             dE_partial = 2 * spin_old * sum(spin_neighbours)
             
-            if dE<0:
+            if dE_partial<0:
                 #If energy decreases, spin flip will be accepted.
                 S[i, j] = spin_new
                 dE = dE + dE_partial
