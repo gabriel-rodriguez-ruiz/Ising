@@ -32,7 +32,7 @@ x
 
 #%%
 
-def immediate_neighbours(S, i, j):
+def immediate_neighbours_2D(S, i, j):
     """Returns 4 immediate neighbours of S[i,j] with periodic contour.
     
     Parameters
@@ -101,7 +101,7 @@ def immediate_neighbours(S, i, j):
 
 #%%
 
-def energy(S):
+def energy_2D(S):
     """Returns energy from a spin matrix S.
     
     Parameters
@@ -123,10 +123,10 @@ def energy(S):
         for j in range(M):
             
             # Find immediate neighbours' coordinates
-            right, up, left, down = immediate_neighbours(S, i, j)
+            neighbours = immediate_neighbours_2D(S, i, j)
             
             # Now make an addition to energy
-            En = En - S[i,j] * (up + right + left + down)
+            En = En - S[i,j] * sum(neighbours)
 
     # Since each pair of spins was counted twice...
     En = En/2
@@ -135,7 +135,7 @@ def energy(S):
 
 #%%
 
-def ising_step(S, beta):
+def ising_step_2D(S, beta):
     """Executes one step in the Markov chain using Metropolis algorithm.
     
     Parameters
@@ -168,10 +168,10 @@ def ising_step(S, beta):
             spin_old = S[i, j]
             spin_new = -S[i, j] # spin flip
             
-            right, up, left, down = immediate_neighbours(S, i, j)
+            spin_neighbours = immediate_neighbours_2D(S, i, j)
             
             #Partial energy difference
-            dE_partial = 2 * spin_old * S[i,j] * (up+right+left+down)
+            dE_partial = 2 * spin_old * S[i,j] * sum(spin_neighbours)
             
             if dE<0:
                 #If energy decreases, spin flip will be accepted.
@@ -194,7 +194,7 @@ def ising_step(S, beta):
 
 #%%
 
-def initial_condition(condition, shape):
+def initial_condition_2D(condition, shape):
     """Returns the initial spin matrix S depending on condition.
     
     Parameters

@@ -28,7 +28,7 @@ nplot = 100 # amount of steps between plots
 #%% Initial state
 
 # S is a random matrix whose elements are 1 or -1 (spin projections)
-S = ing.initial_condition('hot', (Lx, Ly))
+S = ing.initial_condition_2D('hot', (Lx, Ly))
 energy = np.zeros(nsteps + 1)
 magnetization = np.zeros(nsteps + 1)
 
@@ -45,10 +45,10 @@ plt.ylabel("Y (u.a.)")
 start = time.time()
 
 for n in range(npre):
-    S = ing.ising_step(S, beta)[0]
+    S = ing.ising_step_2D(S, beta)[0]
     print("Step: {:.0f}/{:.0f}".format(n+1, npre))
 
-energy[0] = ing.energy(S)
+energy[0] = ing.energy_2D(S)
 magnetization[0] = np.sum(S)
 
 stop = time.time()
@@ -70,7 +70,7 @@ plt.ylabel("Y (u.a.)")
 start = time.time()
 
 for n in range(nsteps):
-    S, dE, dM = ing.ising_step(S, beta)
+    S, dE, dM = ing.ising_step_2D(S, beta)
     energy[n + 1] += energy[n] + dE
     magnetization[n + 1] = magnetization[n] + dM
     print("Step: {:.0f}/{:.0f}".format(n+1, nsteps))
