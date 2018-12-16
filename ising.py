@@ -32,45 +32,33 @@ x
 
 #%%
 
-def immediate_neighbours_2D(S, i, j):
-    """Returns 4 immediate neighbours of S[i,j] with periodic contour.
+def immediate_neighbours_2D(shape, indexes):
+    """Immediate neighbours of (i,j) on 2D (N, M) matrix with periodic contour.
     
     Parameters
     ----------
-    S : np.array
-        A 2D matrix with N rows (up-down xi index) and M columns 
-        (right-left yi index).
-    
+    shape : tuple
+        Shape of 2D matrix. Each of its elements should be an int: (N, M) where 
+        N is the number of total rows and M is the number of total columns.
+    indexes : tuple
+        Indexes of 2D matrix whose neighbours are required. Each of its 
+        elements should be an int: (i, j) where i is the row index and j is the 
+        column index.
+        
     Returns
     -------
-    right : int, float
-         Value of immediate neighbour to the right: S[i, j+1]
+    right : tuple
+         Both index of immediate neighbour to the right: (i, j+1)
     up : int, float
-         Value of upper immediate neighbour: S[i-1, j]
+         Both index of upper immediate neighbour: (i-1, j)
     left : int, float
-         Value of immediate neighbour to the left: S[i, j-1]
+         Both index of immediate neighbour to the left: (i, j-1)
     down : int, float
-         Value of lower immediate neighbour: S[i+1, j]
-        
-    Example
-    -------
-    >> import numpy as np
-    >> S = np.reshape(range(1,10), (3,3))
-    >> S
-    array([[1, 2, 3],
-           [4, 5, 6],
-           [7, 8, 9]])
-    >> S[1, 1]
-    5
-    >> immediate_neighbours(S, 1, 1)
-    (6, 2, 4, 8)
-    >> S[1, 0]
-    4
-    >> immediate_neighbours(S, 1, 0)
-    (5, 1, 6, 7)
+         Both index of lower immediate neighbour: (i+1, j)
     """
     
-    N, M = np.shape(S)
+    N, M = shape
+    i, j = indexes
     
     # Find immediate neighbours up and down
     if i != N - 1:
@@ -81,8 +69,8 @@ def immediate_neighbours_2D(S, i, j):
         iprevious = i - 1
     else:
         iprevious = N - 1
-    up = S[iprevious, j]
-    down = S[inext, j]
+    up = (iprevious, j)
+    down = (inext, j)
     
     
     # Find immediate neighbours up and down
@@ -94,10 +82,38 @@ def immediate_neighbours_2D(S, i, j):
         jprevious = j - 1
     else:
         jprevious = M - 1
-    right = S[i, jnext]
-    left = S[i, jprevious]
+    right = (i, jnext)
+    left = (i, jprevious)
     
     return right, up, left, down
+
+#%%
+
+def all_immediate_neighbours_2D(shape):
+    """Returns list of immediate neighbours of a 2D matrix of a certain shape.
+    
+    Parameters
+    ----------
+    shape : tuple
+        Shape of 2D matrix. Each of its elements should be an int: (N, M) where 
+        N is the number of total rows and M is the number of total columns.
+    
+    Returns
+    ------
+    neighbours : list
+        List of all immediate neighbours. It's a N*M-length list. Each of 
+        its elements is a tuple containing the two index of 4 immediate 
+        neighbours: right, up, left, down.
+    """
+    
+    N, M = shape
+    neighbours = []
+    
+    for i in range(N):
+        for j in range(M):
+            neighbours.append(immediate_neighbours_2D(shape, (i, j)))
+        
+    return neighbours
 
 #%%
 
@@ -115,18 +131,13 @@ def energy_2D(S):
     En : float
         The energy of that specific spin configuration.
     """
-    
-    N, M = np.shape(S)
-    
+        
     En = 0
-    for i in range(N):
-        for j in range(M):
-            
-            # Find immediate neighbours' coordinates
-            neighbours = immediate_neighbours_2D(S, i, j)
-            
-            # Now make an addition to energy
-            En = En - S[i,j] * sum(neighbours)
+    
+    neighbours = all_immediate_neighbours_2D(S.shape)
+    
+    for Sij, nij in zip(np.reshape(S, S.size), neighbours):
+            En = En - Sij * sum([S[index] for index in nij])
 
     # Since each pair of spins was counted twice...
     En = En/2
@@ -157,42 +168,114 @@ def ising_step_2D(S, beta):
         Accumulated magnetization change.
     """
     
-    N, M = np.shape(S)
-    dE = 0  
-    dM = 0 
+    neighbours = all_immediate_neighbours_2D(S.shape)
     
-    #For each place in the matrix S, a random spin flip will be proposed. 
-    for i in range(N):
-        for j in range(M):
+    dE = 0  
+    dM = 0
+    new_S = []
+    # For each place in the matrix S, a random spin flip will be proposed.
+    for Sij, nij in zip(np.reshape(S, S.size), neighbours):
             
-            spin_old = S[i, j]
-            spin_new = -S[i, j] # spin flip
-            
-            spin_neighbours = immediate_neighbours_2D(S, i, j)
-            
-            #Partial energy difference
-            dE_partial = 2 * spin_old * sum(spin_neighbours)
+            # Partial energy difference
+            dE_partial = - 2 * Sij * sum([S[index] for index in nij]) 
+            # -S is the proposed new spin
             
             if dE<0:
-                #If energy decreases, spin flip will be accepted.
-                S[i, j] = spin_new
+                # If energy decreases, spin flip will be accepted.
+                new_S.append(-Sij)
                 dE = dE + dE_partial
-                dM = dM + (spin_new - spin_old)
+                dM = dM - 2*Sij # new_spin - old_spin
                 
             else:
-                #If energy increases, the change will be considered...
+                # If energy increases, the change will be considered...
                 p = np.random.rand()
                 expbetaE = np.exp(-beta * dE_partial)
-                
-                # Only if a random number is below exp(-beta*dE)...
+                # It will only be accepted with probability exp(-beta*dE)
                 if p < expbetaE:
-                    # ...change will be accepted.
-                    # Meaning probability will be exp(-beta*dE)
-                    S[i, j] = spin_new
+                    new_S.append(-Sij)
                     dE = dE + dE_partial
-                    dM = dM + (spin_new - spin_old)
+                    dM = dM - 2*Sij
+                else:
+                    new_S.append(Sij)
+    new_S = np.array(new_S)
+    new_S = np.reshape(new_S, S.shape)
                     
-    return S, dE, dM
+    return new_S, dE, dM
+
+#%%
+
+def ising_simulation_2D(S, beta, nsteps=1000):
+    """Executes several steps in a Markov chain using Metropolis algorithm.
+    
+    Parameters
+    ----------
+    S : np.array
+        2D matrix with N rows (up-down xi index) and M columns (right-left yi 
+        index).
+    beta : float
+        Multiplicative inverse of the temperature of the system.
+    nsteps=1000 : int, optional
+        Desired amount of steps.
+        
+    Returns
+    -------
+    new_S : np.array
+        Final 2D matrix. Same as S, it has N rows (up-down xi index) and M 
+        columns (right-left yi index).
+    E : np.array
+        Accumulated energy change array. Holds one value per step.
+    M : np.array
+        Accumulated magnetization change array. Holds one value per step.
+    """
+    
+    neighbours = all_immediate_neighbours_2D(S.shape)
+
+    energy = []
+    magnetization = []
+    
+    energy.append(energy_2D(S))
+    magnetization.append(sum(S.reshape(S.size)))
+    
+    for n in range(nsteps):
+        dE = 0  
+        dM = 0
+        new_S = []
+        # For each place in the matrix S, a random spin flip will be proposed.
+        for Sij, nij in zip(np.reshape(S, S.size), neighbours):
+                
+            # Partial energy difference
+            dE_partial = - 2 * Sij * sum([S[index] for index in nij]) 
+            # -Sij is the proposed new spin
+            
+            if dE<0:
+                # If energy decreases, spin flip will be accepted.
+                new_S.append(-Sij)
+                dE = dE + dE_partial
+                dM = dM - 2*Sij # new_spin - old_spin
+                
+            else:
+                # If energy increases, the change will be considered...
+                p = np.random.rand()
+                expbetaE = np.exp(-beta * dE_partial)
+                # It will only be accepted with probability exp(-beta*dE)
+                if p < expbetaE:
+                    new_S.append(-Sij)
+                    dE = dE + dE_partial
+                    dM = dM - 2*Sij
+                else:
+                    new_S.append(Sij)
+                    
+        new_S = np.array(new_S)
+        new_S = np.reshape(new_S, S.shape)
+        
+        S = new_S
+        energy.append(energy[-1] + dE)
+        magnetization.append(magnetization[-1] + dM)
+    
+    energy = np.array(energy)
+    magnetization = np.array(magnetization)
+                    
+    return new_S, energy, magnetization
 
 #%%
 
