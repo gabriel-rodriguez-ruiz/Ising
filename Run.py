@@ -20,7 +20,7 @@ Lx = 15 # x size
 Ly = 15 # y size
 #beta_critico = log(1+sqrt(2))/2 = 0.44069
 beta = 0.9 # 1/kT
-npre = 6000 # amount of steps used to pre-thermalize
+npre = 2000 # amount of steps used to pre-thermalize
 nsteps = 10000 # amount of steps used post-thermalization
 nplot = 100 # amount of steps between plots
 
@@ -45,7 +45,7 @@ start = time.time()
 
 for n in range(npre):
     S = ing.ising_step_2D(S, beta)[0]
-    print("Step: {:.0f}/{:.0f}".format(n+1, npre))
+#    print("Step: {:.0f}/{:.0f}".format(n+1, npre))
 
 energy[0] = ing.energy_2D(S)
 magnetization[0] = np.sum(S)
