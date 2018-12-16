@@ -137,7 +137,7 @@ def energy_2D(S):
     neighbours = all_immediate_neighbours_2D(S.shape)
     
     for Sij, nij in zip(np.reshape(S, S.size), neighbours):
-            En = En - Sij * sum([S[index] for index in nij])
+        En = En - Sij * sum([S[index] for index in nij])
 
     # Since each pair of spins was counted twice...
     En = En/2
@@ -234,12 +234,14 @@ def ising_simulation_2D(S, beta, nsteps=1000):
     magnetization = []
     
     energy.append(energy_2D(S))
-    magnetization.append(sum(S.reshape(S.size)))
+    magnetization.append(np.sum(S))
     
     for n in range(nsteps):
+        
         dE = 0  
         dM = 0
         new_S = []
+        
         # For each place in the matrix S, a random spin flip will be proposed.
         for Sij, nij in zip(np.reshape(S, S.size), neighbours):
                 
@@ -257,7 +259,7 @@ def ising_simulation_2D(S, beta, nsteps=1000):
                 # If energy increases, the change will be considered...
                 p = np.random.rand()
                 expbetaE = np.exp(-beta * dE_partial)
-                # It will only be accepted with probability exp(-beta*dE)
+                # ...but will only be accepted with probability exp(-beta*dE)
                 if p < expbetaE:
                     new_S.append(-Sij)
                     dE = dE + dE_partial
