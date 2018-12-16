@@ -19,10 +19,9 @@ import time
 Lx = 15 # x size
 Ly = 15 # y size
 #beta_critico = log(1+sqrt(2))/2 = 0.44069
-beta = 0.5 # 1/kT
-
-npre = 2000 # amount of steps used to pre-thermalize
-nsteps = 5000 # amount of steps used post-thermalization
+beta = 0.9 # 1/kT
+npre = 6000 # amount of steps used to pre-thermalize
+nsteps = 10000 # amount of steps used post-thermalization
 nplot = 100 # amount of steps between plots
 
 #%% Initial state
@@ -46,7 +45,7 @@ start = time.time()
 
 for n in range(npre):
     S = ing.ising_step(S, beta)[0]
-    print("Step: {:.0f}/{:.0f}".format(n+1, npre))
+    #print("Step: {:.0f}/{:.0f}".format(n+1, npre))
 
 energy[0] = ing.energy(S)
 magnetization[0] = np.sum(S)
@@ -71,9 +70,9 @@ start = time.time()
 
 for n in range(nsteps):
     S, dE, dM = ing.ising_step(S, beta)
-    energy[n + 1] += energy[n] + dE
+    energy[n + 1] = energy[n] + dE
     magnetization[n + 1] = magnetization[n] + dM
-    print("Step: {:.0f}/{:.0f}".format(n+1, nsteps))
+    #print("Step: {:.0f}/{:.0f}".format(n+1, nsteps))
 
 stop = time.time()
 enlapsed = stop - start
@@ -102,7 +101,22 @@ plt.subplot(2,1,1)
 plt.plot(energy, "o-")
 plt.ylabel("Energía")
 
+
 plt.subplot(2,1,2)
 plt.plot(magnetization, "o-")
 plt.ylabel("Magnetización")
+plt.xlabel("Paso")
+
+n = np.arange(1, len(energy)+1)
+mean_energy_accumulated = np.cumsum(energy)/n
+mean_magnetization_accumulated = np.cumsum(magnetization)/n
+
+plt.figure()
+plt.subplot(2,1,1)
+plt.plot(mean_energy_accumulated, "o-")
+plt.ylabel("Energía media")
+
+plt.subplot(2,1,2)
+plt.plot(mean_magnetization_accumulated, "o-")
+plt.ylabel("Magnetización media")
 plt.xlabel("Paso")

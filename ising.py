@@ -171,9 +171,9 @@ def ising_step(S, beta):
             right, up, left, down = immediate_neighbours(S, i, j)
             
             #Partial energy difference
-            dE_partial = 2 * spin_old * S[i,j] * (up+right+left+down)
-            
-            if dE<0:
+            dE_partial = 2 * spin_old * (up+right+left+down)
+            #print(dE_partial)
+            if dE_partial<0:
                 #If energy decreases, spin flip will be accepted.
                 S[i, j] = spin_new
                 dE = dE + dE_partial
@@ -181,7 +181,7 @@ def ising_step(S, beta):
             else:
                 #If energy increases, the change will be considered...
                 p = np.random.rand()
-                expbetaE = np.exp(-beta * dE)
+                expbetaE = np.exp(-beta * dE_partial)
                 
                 # Only if a random number is below exp(-beta*dE)...
                 if p < expbetaE:
