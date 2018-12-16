@@ -19,9 +19,9 @@ Lx = 15
 #Tamaño en y,
 Ly = 15
 #beta_critico = log(1+sqrt(2))/2 = 0.44069
-beta = 0.01
+beta = 0.5
 
-npasos = 50000   #cantidad total de pasos
+npasos = 100000   #cantidad total de pasos
 #100000 pasos equivale a 195s de espera para una grilla de 15x15
 
 #Condición inicial caliente
