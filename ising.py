@@ -135,7 +135,7 @@ def energy_2D(S):
 
 #%%
 
-def ising_step_2D(S, beta):
+def ising_step_2D(S, beta, H=0):
     """Executes one step in the Markov chain using Metropolis algorithm.
     
     Parameters
@@ -145,7 +145,10 @@ def ising_step_2D(S, beta):
         (right-left yi index).
     beta : float
         The multiplicative inverse of the Temperature of the system.
-        
+    
+    H : float between -1 and 1 (optional)
+        External magnetic field.
+            
     Returns
     -------
     S : np.array
@@ -170,8 +173,8 @@ def ising_step_2D(S, beta):
             
             spin_neighbours = immediate_neighbours_2D(S, i, j)
             
-            #Partial energy difference
-            dE_partial = 2 * spin_old * sum(spin_neighbours)
+            #Partial energy difference, meaning the difference between the energy after spin flip and before.
+            dE_partial = 2 * spin_old * sum(spin_neighbours) + 2 * spin_old *  H 
             
             if dE_partial<0:
                 #If energy decreases, spin flip will be accepted.
@@ -184,10 +187,10 @@ def ising_step_2D(S, beta):
                 p = np.random.rand()
                 expbetaE = np.exp(-beta * dE_partial)
                 
-                # Only if a random number is below exp(-beta*dE)...
+                # Only if a random number is below exp(-beta*dE_partial)...
                 if p < expbetaE:
                     # ...change will be accepted.
-                    # Meaning probability will be exp(-beta*dE)
+                    # Meaning probability will be exp(-beta*dE_partial)
                     S[i, j] = spin_new
                     dE = dE + dE_partial
                     dM = dM + (spin_new - spin_old)

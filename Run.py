@@ -16,12 +16,13 @@ import time
 
 #%% User's parameters
 
-Lx = 15 # x size
-Ly = 15 # y size
+Lx = 32 # x size
+Ly = 32 # y size
 #beta_critico = log(1+sqrt(2))/2 = 0.44069
-beta = 0.9 # 1/kT
-npre = 2000 # amount of steps used to pre-thermalize
-nsteps = 10000 # amount of steps used post-thermalization
+beta = 0.44 # 1/kT
+H = 0.01
+npre = 0 # amount of steps used to pre-thermalize
+nsteps = 2000 # amount of steps used post-thermalization
 nplot = 100 # amount of steps between plots
 
 #%% Initial state
@@ -44,7 +45,7 @@ plt.ylabel("Y (u.a.)")
 start = time.time()
 
 for n in range(npre):
-    S = ing.ising_step_2D(S, beta)[0]
+    S = ing.ising_step_2D(S, beta, H)[0]
 #    print("Step: {:.0f}/{:.0f}".format(n+1, npre))
 
 energy[0] = ing.energy_2D(S)
@@ -69,10 +70,10 @@ plt.ylabel("Y (u.a.)")
 start = time.time()
 
 for n in range(nsteps):
-    S, dE, dM = ing.ising_step_2D(S, beta)
+    S, dE, dM = ing.ising_step_2D(S, beta, H)
     energy[n + 1] = energy[n] + dE
     magnetization[n + 1] = magnetization[n] + dM
-    print("Step: {:.0f}/{:.0f}".format(n+1, nsteps))
+    #print("Step: {:.0f}/{:.0f}".format(n+1, nsteps))
 
 stop = time.time()
 enlapsed = stop - start
