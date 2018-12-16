@@ -250,7 +250,7 @@ def ising_simulation_2D(S, beta, nsteps=1000):
             dE_partial = - 2 * Sij * sum([S[index] for index in nij]) 
             # -Sij is the proposed new spin
             
-            if dE<0:
+            if dE_partial<0:
                 # If energy decreases, spin flip will be accepted.
                 new_S.append(-Sij)
                 dE = dE + dE_partial
