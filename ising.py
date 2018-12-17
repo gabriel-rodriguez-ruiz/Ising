@@ -180,7 +180,7 @@ def energy_2D(S):
 
 #%%
 
-def ising_step_2D(S, beta, neighbours, p):
+def ising_step_2D(S, beta, H, neighbours, p):
     """Executes one step in the Markov chain using Metropolis algorithm.
     
     Parameters
@@ -189,7 +189,9 @@ def ising_step_2D(S, beta, neighbours, p):
         A 2D matrix with N rows (up-down xi index) and M columns 
         (right-left yi index).
     beta : float
-        The multiplicative inverse of the Temperature of the system.
+        The multiplicative inverse of the temperature of the system.
+    H : float
+        External magnetic field. Must be between 1 and -1.
     neighbours : list
         The list of immediate neighbours on each place of a flatten matrix 
         of same shape as S. Each of its elements should be an iterative wich 
@@ -215,7 +217,7 @@ def ising_step_2D(S, beta, neighbours, p):
     for Sij, nij, pk in zip(np.reshape(S, S.size), neighbours, p):
         
         # Partial energy difference
-        dE_partial = 2 * Sij * sum([S[index] for index in nij])
+        dE_partial = 2 * Sij * ( sum([S[index] for index in nij]) +  H )
         # -S is the proposed new spin
         
         if dE_partial<0:
@@ -229,7 +231,7 @@ def ising_step_2D(S, beta, neighbours, p):
             # If energy increases, the change will be considered...
 #            p = np.random.rand()
             expbetaE = exp(-beta * dE_partial)
-            # It will only be accepted with probability exp(-beta*dE)
+            # It will only be accepted with probability exp(-beta*dE_partial)
             if pk < expbetaE:
 #                new_S.append(-Sij)
                 new_S[k] = -Sij
@@ -261,7 +263,7 @@ Ahora vas al tercero. ¿Ahora mirás los vecinos de ese spin en S? ¿O en S'?
 
 #%%
     
-def ising_step_2D_list(S, beta, neighbours, p):
+def ising_step_2D_list(S, beta, H, neighbours, p):
     """Executes one step in the Markov chain using Metropolis algorithm.
     
     Parameters
@@ -270,7 +272,9 @@ def ising_step_2D_list(S, beta, neighbours, p):
         A 2D matrix with N rows (up-down xi index) and M columns 
         (right-left yi index).
     beta : float
-        The multiplicative inverse of the Temperature of the system.
+        The multiplicative inverse of the temperature of the system.
+    H : float
+        External magnetic field. Must be between 1 and -1.
     neighbours : list
         The list of immediate neighbours on each place of a flatten matrix 
         of same shape as S. Each of its elements should be an iterative wich 
@@ -296,7 +300,7 @@ def ising_step_2D_list(S, beta, neighbours, p):
     for Sij, nij, pk in zip(np.reshape(S, S.size), neighbours, p):
         
         # Partial energy difference
-        dE_partial = 2 * Sij * sum([S[index] for index in nij])
+        dE_partial = 2 * Sij * ( sum([S[index] for index in nij]) +  H )
         # -S is the proposed new spin
         
         if dE_partial<0:
@@ -310,7 +314,7 @@ def ising_step_2D_list(S, beta, neighbours, p):
             # If energy increases, the change will be considered...
 #            p = np.random.rand()
             expbetaE = exp(-beta * dE_partial)
-            # It will only be accepted with probability exp(-beta*dE)
+            # It will only be accepted with probability exp(-beta*dE_partial)
             if pk < expbetaE:
                 new_S.append(-Sij)
 #                new_S[k] = -Sij
@@ -328,7 +332,7 @@ def ising_step_2D_list(S, beta, neighbours, p):
 
 #%%
 
-def ising_simulation_2D(S, beta, nsteps=1000):
+def ising_simulation_2D(S, beta, H=0, nsteps=1000):
     """Executes several steps in a Markov chain using Metropolis algorithm.
     
     Parameters
@@ -338,6 +342,8 @@ def ising_simulation_2D(S, beta, nsteps=1000):
         index).
     beta : float
         Multiplicative inverse of the temperature of the system.
+    H : float
+        External magnetic field. Must be between 1 and -1.
     nsteps=1000 : int, optional
         Desired amount of steps.
         
@@ -362,7 +368,9 @@ def ising_simulation_2D(S, beta, nsteps=1000):
     
     print("Running...")
     for n in range(nsteps):
-        S, dE, dM = ising_step_2D(S, beta, neighbours)
+#        S, dE, dM = ising_step_2D(S, beta, H, neighbours)
+        p = np.array([np.random.rand() for n in range(S.size)])
+        S, dE, dM = ising_step_2D(S, beta, H, neighbours, p)
         energy.append(energy[-1] + dE)
         magnetization.append(magnetization[-1] + dM)
     print("Done running :)")
