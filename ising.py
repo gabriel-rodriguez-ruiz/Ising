@@ -7,6 +7,7 @@ Created on Mon Dec 10 14:30:44 2018
 """
 
 import numpy as np
+from math import exp
 
 """Beware!
 
@@ -146,7 +147,7 @@ def energy_2D(S):
 
 #%%
 
-def ising_step_2D(S, beta):
+def ising_step_2D(S, beta, neighbours, p):
     """Executes one step in the Markov chain using Metropolis algorithm.
     
     Parameters
@@ -156,10 +157,14 @@ def ising_step_2D(S, beta):
         (right-left yi index).
     beta : float
         The multiplicative inverse of the Temperature of the system.
+    neighbours : list
+        The list of immediate neighbours on each place of a flatten matrix 
+        of same shape as S. Each of its elements should be an iterative wich 
+        holds the index of the 4 immediate neighbours.
         
     Returns
     -------
-    S : np.array
+    new_S : np.array
         A 2D matrix with N rows (up-down xi index) and M columns 
         (right-left yi index).
     dE : np.array
@@ -168,36 +173,122 @@ def ising_step_2D(S, beta):
         Accumulated magnetization change.
     """
     
-    neighbours = all_immediate_neighbours_2D(S.shape)
+    dE = 0  
+    dM = 0
+#    new_S = []
+    new_S = np.reshape(S, S.size)
+    k = 0
+    # For each place in the matrix S, a random spin flip will be proposed.
+    for Sij, nij, pk in zip(np.reshape(S, S.size), neighbours, p):
+        
+        # Partial energy difference
+        dE_partial = 2 * Sij * sum([S[index] for index in nij])
+        # -S is the proposed new spin
+        
+        if dE_partial<0:
+            # If energy decreases, spin flip will be accepted.
+#            new_S.append(-Sij)
+            new_S[k] = -Sij
+            dE = dE + dE_partial
+            dM = dM - 2*Sij # new_spin - old_spin
+            
+        else:
+            # If energy increases, the change will be considered...
+#            p = np.random.rand()
+            expbetaE = exp(-beta * dE_partial)
+            # It will only be accepted with probability exp(-beta*dE)
+            if pk < expbetaE:
+#                new_S.append(-Sij)
+                new_S[k] = -Sij
+                dE = dE + dE_partial
+                dM = dM - 2*Sij
+#            else:
+#                new_S.append(Sij)
+        
+        k += 1
+    
+#    new_S = np.array(new_S)
+    new_S = np.reshape(new_S, S.shape)
+                    
+    return new_S, dE, dM
+
+"""
+¿Viste que spin por spin probás ver si hay que invertirlo? Ahí gran parte de la 
+decisión recae sobre los vecinos de ese spin. 
+
+Ponele que tenés una matriz S. Recorrés dos spines y el segundo lo das vuelta, 
+por lo cual la matriz S' ahora tiene un spin invertido respecto a S. 
+
+Ahora vas al tercero. ¿Ahora mirás los vecinos de ese spin en S? ¿O en S'?
+
+--> El código con array se fija en los vecinos de S'.
+--> El código con listas se fija en los vecinos de S.
+
+"""
+
+#%%
+    
+def ising_step_2D_list(S, beta, neighbours, p):
+    """Executes one step in the Markov chain using Metropolis algorithm.
+    
+    Parameters
+    ----------
+    S : np.array
+        A 2D matrix with N rows (up-down xi index) and M columns 
+        (right-left yi index).
+    beta : float
+        The multiplicative inverse of the Temperature of the system.
+    neighbours : list
+        The list of immediate neighbours on each place of a flatten matrix 
+        of same shape as S. Each of its elements should be an iterative wich 
+        holds the index of the 4 immediate neighbours.
+        
+    Returns
+    -------
+    new_S : np.array
+        A 2D matrix with N rows (up-down xi index) and M columns 
+        (right-left yi index).
+    dE : np.array
+        Accumulated energy change.
+    dM : np.array
+        Accumulated magnetization change.
+    """
     
     dE = 0  
     dM = 0
     new_S = []
+#    new_S = np.reshape(S, S.size)
+#    k = 0
     # For each place in the matrix S, a random spin flip will be proposed.
-    for Sij, nij in zip(np.reshape(S, S.size), neighbours):
+    for Sij, nij, pk in zip(np.reshape(S, S.size), neighbours, p):
+        
+        # Partial energy difference
+        dE_partial = 2 * Sij * sum([S[index] for index in nij])
+        # -S is the proposed new spin
+        
+        if dE_partial<0:
+            # If energy decreases, spin flip will be accepted.
+            new_S.append(-Sij)
+#            new_S[k] = -Sij
+            dE = dE + dE_partial
+            dM = dM - 2*Sij # new_spin - old_spin
             
-            # Partial energy difference
-            dE_partial = - 2 * Sij * sum([S[index] for index in nij]) 
-            # -S is the proposed new spin
-            
-            if dE<0:
-                # If energy decreases, spin flip will be accepted.
+        else:
+            # If energy increases, the change will be considered...
+#            p = np.random.rand()
+            expbetaE = exp(-beta * dE_partial)
+            # It will only be accepted with probability exp(-beta*dE)
+            if pk < expbetaE:
                 new_S.append(-Sij)
+#                new_S[k] = -Sij
                 dE = dE + dE_partial
-                dM = dM - 2*Sij # new_spin - old_spin
-                
+                dM = dM - 2*Sij
             else:
-                # If energy increases, the change will be considered...
-                p = np.random.rand()
-                expbetaE = np.exp(-beta * dE_partial)
-                # It will only be accepted with probability exp(-beta*dE)
-                if p < expbetaE:
-                    new_S.append(-Sij)
-                    dE = dE + dE_partial
-                    dM = dM - 2*Sij
-                else:
-                    new_S.append(Sij)
-    new_S = np.array(new_S)
+                new_S.append(Sij)
+        
+#        k += 1
+    
+#    new_S = np.array(new_S)
     new_S = np.reshape(new_S, S.shape)
                     
     return new_S, dE, dM
@@ -238,40 +329,7 @@ def ising_simulation_2D(S, beta, nsteps=1000):
     
     print("Running...")
     for n in range(nsteps):
-        
-        dE = 0  
-        dM = 0
-        new_S = []
-        
-        # For each place in the matrix S, a random spin flip will be proposed.
-        for Sij, nij in zip(np.reshape(S, S.size), neighbours):
-                
-            # Partial energy difference
-            dE_partial = - 2 * Sij * sum([S[index] for index in nij]) 
-            # -Sij is the proposed new spin
-            
-            if dE_partial<0:
-                # If energy decreases, spin flip will be accepted.
-                new_S.append(-Sij)
-                dE = dE + dE_partial
-                dM = dM - 2*Sij # new_spin - old_spin
-                
-            else:
-                # If energy increases, the change will be considered...
-                p = np.random.rand()
-                expbetaE = np.exp(-beta * dE_partial)
-                # ...but will only be accepted with probability exp(-beta*dE)
-                if p < expbetaE:
-                    new_S.append(-Sij)
-                    dE = dE + dE_partial
-                    dM = dM - 2*Sij
-                else:
-                    new_S.append(Sij)
-                    
-        new_S = np.array(new_S)
-        new_S = np.reshape(new_S, S.shape)
-        
-        S = new_S
+        S, dE, dM = ising_step_2D(S, beta, neighbours)
         energy.append(energy[-1] + dE)
         magnetization.append(magnetization[-1] + dM)
     print("Done running :)")
@@ -279,7 +337,7 @@ def ising_simulation_2D(S, beta, nsteps=1000):
     energy = np.array(energy)
     magnetization = np.array(magnetization)
                     
-    return new_S, energy, magnetization
+    return S, energy, magnetization
 
 #%%
 
@@ -304,5 +362,7 @@ def initial_condition_2D(condition, shape):
         S = np.ones(shape)
     else:
         raise TypeError("Wrong condition. Must be 'hot' or 'cold'")
+    
+    S = np.array(S, dtype='int8')
     
     return S
