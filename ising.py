@@ -56,8 +56,8 @@ def flat_matrix_index_conversion_2D(shape):
     flat_index = {}
     for i in range(shape[0]):
         for j in range(shape[1]):
-            matrix_index.append((i,j))
             flat_index.update({(i,j) : len(matrix_index)})
+            matrix_index.append((i,j))
     
     flat_to_matrix = lambda i : matrix_index[i]
     matrix_to_flat = lambda tup : flat_index[tup]
@@ -181,27 +181,25 @@ def energy_2D(S):
 #%%
 
 def ising_step_2D(S, beta, H, neighbours, p):
-    """Executes one step in the Markov chain using Metropolis algorithm.
+    """Executes one matrix step in the Markov chain using Metropolis algorithm.
     
     Parameters
     ----------
     S : np.array
-        A 2D matrix with N rows (up-down xi index) and M columns 
-        (right-left yi index).
+        A flatten 2D spin matrix. Each of its elements should be +1 or -1.
     beta : float
         The multiplicative inverse of the temperature of the system.
     H : float
         External magnetic field. Must be between 1 and -1.
     neighbours : list
-        The list of immediate neighbours on each place of a flatten matrix 
-        of same shape as S. Each of its elements should be an iterative wich 
-        holds the index of the 4 immediate neighbours.
+        The list of immediate neighbours on each place of the flatten matrix. 
+        Each of its elements should be an iterative wich holds the index of the 
+        4 immediate neighbours.
         
     Returns
     -------
-    new_S : np.array
-        A 2D matrix with N rows (up-down xi index) and M columns 
-        (right-left yi index).
+    S : np.array
+        New flatten 2D spin matrix. Each of its elements is +1 or -1.
     dE : np.array
         Accumulated energy change.
     dM : np.array
@@ -210,11 +208,9 @@ def ising_step_2D(S, beta, H, neighbours, p):
     
     dE = 0  
     dM = 0
-#    new_S = []
-    new_S = np.reshape(S, S.size)
     k = 0
     # For each place in the matrix S, a random spin flip will be proposed.
-    for Sij, nij, pk in zip(np.reshape(S, S.size), neighbours, p):
+    for Sij, nij, pk in zip(S, neighbours, p):
         
         # Partial energy difference
         dE_partial = 2 * Sij * ( sum([S[index] for index in nij]) +  H )
@@ -222,8 +218,7 @@ def ising_step_2D(S, beta, H, neighbours, p):
         
         if dE_partial<0:
             # If energy decreases, spin flip will be accepted.
-#            new_S.append(-Sij)
-            new_S[k] = -Sij
+            S[k] = -Sij
             dE = dE + dE_partial
             dM = dM - 2*Sij # new_spin - old_spin
             
@@ -233,102 +228,13 @@ def ising_step_2D(S, beta, H, neighbours, p):
             expbetaE = exp(-beta * dE_partial)
             # It will only be accepted with probability exp(-beta*dE_partial)
             if pk < expbetaE:
-#                new_S.append(-Sij)
-                new_S[k] = -Sij
+                S[k] = -Sij
                 dE = dE + dE_partial
                 dM = dM - 2*Sij
-#            else:
-#                new_S.append(Sij)
         
         k += 1
-    
-#    new_S = np.array(new_S)
-    new_S = np.reshape(new_S, S.shape)
                     
-    return new_S, dE, dM
-
-"""
-¿Viste que spin por spin probás ver si hay que invertirlo? Ahí gran parte de la 
-decisión recae sobre los vecinos de ese spin. 
-
-Ponele que tenés una matriz S. Recorrés dos spines y el segundo lo das vuelta, 
-por lo cual la matriz S' ahora tiene un spin invertido respecto a S. 
-
-Ahora vas al tercero. ¿Ahora mirás los vecinos de ese spin en S? ¿O en S'?
-
---> El código con array se fija en los vecinos de S'.
---> El código con listas se fija en los vecinos de S.
-
-"""
-
-#%%
-    
-def ising_step_2D_list(S, beta, H, neighbours, p):
-    """Executes one step in the Markov chain using Metropolis algorithm.
-    
-    Parameters
-    ----------
-    S : np.array
-        A 2D matrix with N rows (up-down xi index) and M columns 
-        (right-left yi index).
-    beta : float
-        The multiplicative inverse of the temperature of the system.
-    H : float
-        External magnetic field. Must be between 1 and -1.
-    neighbours : list
-        The list of immediate neighbours on each place of a flatten matrix 
-        of same shape as S. Each of its elements should be an iterative wich 
-        holds the index of the 4 immediate neighbours.
-        
-    Returns
-    -------
-    new_S : np.array
-        A 2D matrix with N rows (up-down xi index) and M columns 
-        (right-left yi index).
-    dE : np.array
-        Accumulated energy change.
-    dM : np.array
-        Accumulated magnetization change.
-    """
-    
-    dE = 0  
-    dM = 0
-    new_S = []
-#    new_S = np.reshape(S, S.size)
-#    k = 0
-    # For each place in the matrix S, a random spin flip will be proposed.
-    for Sij, nij, pk in zip(np.reshape(S, S.size), neighbours, p):
-        
-        # Partial energy difference
-        dE_partial = 2 * Sij * ( sum([S[index] for index in nij]) +  H )
-        # -S is the proposed new spin
-        
-        if dE_partial<0:
-            # If energy decreases, spin flip will be accepted.
-            new_S.append(-Sij)
-#            new_S[k] = -Sij
-            dE = dE + dE_partial
-            dM = dM - 2*Sij # new_spin - old_spin
-            
-        else:
-            # If energy increases, the change will be considered...
-#            p = np.random.rand()
-            expbetaE = exp(-beta * dE_partial)
-            # It will only be accepted with probability exp(-beta*dE_partial)
-            if pk < expbetaE:
-                new_S.append(-Sij)
-#                new_S[k] = -Sij
-                dE = dE + dE_partial
-                dM = dM - 2*Sij
-            else:
-                new_S.append(Sij)
-        
-#        k += 1
-    
-#    new_S = np.array(new_S)
-    new_S = np.reshape(new_S, S.shape)
-                    
-    return new_S, dE, dM
+    return S, dE, dM
 
 #%%
 
@@ -338,8 +244,7 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000):
     Parameters
     ----------
     S : np.array
-        2D matrix with N rows (up-down xi index) and M columns (right-left yi 
-        index).
+        2D spin matrix. Each of its elements should be +1 or -1.
     beta : float
         Multiplicative inverse of the temperature of the system.
     H : float
@@ -349,16 +254,22 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000):
         
     Returns
     -------
-    new_S : np.array
-        Final 2D matrix. Same as S, it has N rows (up-down xi index) and M 
-        columns (right-left yi index).
+    Sf : np.array
+        Final 2D spin matrix. Each of its elements are +1 or -1.
     E : np.array
         Accumulated energy change array. Holds one value per step.
     M : np.array
         Accumulated magnetization change array. Holds one value per step.
     """
     
-    neighbours = all_immediate_neighbours_2D(S.shape)
+    shape = S.shape
+    neighbours = all_immediate_neighbours_2D(shape)
+    matrix_to_flat = flat_matrix_index_conversion_2D(shape)[1]
+    flat_neighbours = []
+    for nij in neighbours:
+        one_element = [matrix_to_flat(index) for index in nij]
+        flat_neighbours.append(tuple(one_element))
+    neighbours = flat_neighbours
 
     energy = []
     magnetization = []
@@ -366,6 +277,7 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000):
     energy.append(energy_2D(S))
     magnetization.append(np.sum(S))
     
+    S = np.array(S.reshape(S.size))
     print("Running...")
     for n in range(nsteps):
 #        S, dE, dM = ising_step_2D(S, beta, H, neighbours)
@@ -374,6 +286,7 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000):
         energy.append(energy[-1] + dE)
         magnetization.append(magnetization[-1] + dM)
     print("Done running :)")
+    S = S.reshape(shape)
     
     energy = np.array(energy)
     magnetization = np.array(magnetization)
