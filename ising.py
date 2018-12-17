@@ -33,6 +33,39 @@ x
 
 #%%
 
+def flat_matrix_index_conversion_2D(shape):
+    """Returns both 2D index converters flat-to-matrix and matrix-to-flat.
+    
+    Parameters
+    ----------
+    shape : tuple
+        Matrix dimensions. Must hold two int values: (N, M) where N is the 
+        number of rows and M is the number of columns.
+    
+    Returns
+    -------
+    flat_to_matrix : function
+        Flat-to-matrix index converter. Takes in an int and returns a tuple;
+        i.e.: flat_to_matrix(0) = (0,0)
+    flat_to_matrix : function
+        Matrix-to-flat index converter. Takes in a tuple and returns an int; 
+        i.e.: matrix_to_flat((0,0)) = 0
+    """
+    
+    matrix_index = []
+    flat_index = {}
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            matrix_index.append((i,j))
+            flat_index.update({(i,j) : len(matrix_index)})
+    
+    flat_to_matrix = lambda i : matrix_index[i]
+    matrix_to_flat = lambda tup : flat_index[tup]
+    
+    return flat_to_matrix, matrix_to_flat
+    
+#%%
+
 def immediate_neighbours_2D(shape, indexes):
     """Immediate neighbours of (i,j) on 2D (N, M) matrix with periodic contour.
     
