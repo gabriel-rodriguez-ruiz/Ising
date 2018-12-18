@@ -6,8 +6,11 @@ Created on Mon Dec 10 14:30:44 2018
 @author: Gabriel, Valeria
 """
 
+import threading
+import queue
 import numpy as np
 from math import exp
+import matplotlib.pyplot as plt
 
 """Beware!
 
@@ -238,7 +241,8 @@ def ising_step_2D(S, beta, H, neighbours, p):
 
 #%%
 
-def ising_simulation_2D(S, beta, H=0, nsteps=1000):
+def ising_simulation_2D(S, beta, H=0, nsteps=1000, 
+                        animation=False, nplot=200):
     """Executes several steps in a Markov chain using Metropolis algorithm.
     
     Parameters
@@ -274,9 +278,26 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000):
     energy = []
     magnetization = []
     
+#    if animation:
+#        generator = ising_animation_2D(
+#                S, 
+#                beta, 
+#                H, 
+#                textlabel=lambda i : 'Paso {:.0f}'.format(i*nplot))
+#        q = queue.Queue()
+#        def worker():
+#            while True:
+#                S = q.get() # Waits for data to be available
+#                generator.send(S)
+#                next(generator)
+#                plt.show()
+#        t = threading.Thread(target=worker)
+    
     energy.append(energy_2D(S))
     magnetization.append(np.sum(S))
     
+#    if animation:
+#        t.start()
     S = np.array(S.reshape(S.size))
     print("Running...")
     for n in range(nsteps):
@@ -285,6 +306,8 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000):
         S, dE, dM = ising_step_2D(S, beta, H, neighbours, p)
         energy.append(energy[-1] + dE)
         magnetization.append(magnetization[-1] + dM)
+#        if animation and not bool(n%nplot):
+#            q.put(S.reshape(shape))
     print("Done running :)")
     S = S.reshape(shape)
     
@@ -320,3 +343,61 @@ def initial_condition_2D(condition, shape):
     S = np.array(S, dtype='int8')
     
     return S
+
+#%%
+    
+def ising_animation_2D(S, beta, H, 
+                       textlabel=lambda i: 'Paso {:.0f}'.format(i)):
+    """Makes a series of 2D plots into an animation.
+    
+    Parameters
+    ----------
+    S : np.array
+        2D spin matrix. Each of its elements should be +1 or -1.
+    beta : float
+        Multiplicative inverse of the temperature of the system.
+    H : float
+        External magnetic field. Must be between 1 and -1.
+    textlabel : function, optional
+        Function that returns a text label for each plot. Must take in only one 
+        int parameter and return text.
+    
+    Returns
+    -------
+    ising_animation_generator_2D : generator
+        Animation generator.    
+        
+    """
+    
+    # ACTIVE CODE
+    
+    fig = plt.figure()
+    fig.add_axes()
+    ax = fig.gca()
+    
+    ax.set_xlim((0, S.shape[0]))
+    ax.set_ylim((0, S.shape[1]))
+    plt.xlabel("X (u.a.)")
+    plt.ylabel("Y (u.a.)")
+    plt.title(r"Spines con $\beta$={:.2f}, $H$={:.2f}".format(beta, H))
+    
+    label = ax.text(0.02, 0.93, '', transform=ax.transAxes, 
+                    color='r', fontsize='x-large', fontweight='bold')
+
+    def ising_animation_generator_2D():
+        i = 0
+        while True:
+            S = yield
+            label.set_text('')
+            ax.pcolormesh(S)
+            label.set_text(textlabel(i))
+            plt.show()
+            i = i + 1
+            yield
+    
+    generator = ising_animation_generator_2D()
+    generator.send(None)
+    generator.send(S)
+    next(generator)
+    
+    return generator

@@ -39,7 +39,9 @@ plt.ylabel("Y (u.a.)")
 
 start = time.time()
 
-Sf, energy, magnetization = ing.ising_simulation_2D(S, beta, nsteps)
+Sf, energy, magnetization = ing.ising_simulation_2D(S, beta, nsteps=nsteps,
+                                                    animation=False,
+                                                    nplot=500)
 
 stop = time.time()
 enlapsed = stop - start
