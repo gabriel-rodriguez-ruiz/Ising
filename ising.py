@@ -8,6 +8,7 @@ Created on Mon Dec 10 14:30:44 2018
 
 import numpy as np
 from math import exp
+from matplotlib import rcParams
 import matplotlib.pyplot as plt
 import os
 import queue
@@ -207,7 +208,7 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000, printing=True,
         energy.append(energy[-1] + dE)
         magnetization.append(magnetization[-1] + dM)
         if animation:
-            if n != 0 and not bool((n+1) % nstepsbetween):
+            if not bool((n+1) % nstepsbetween):
                 data = [np.array(S), np.array(energy), np.array(magnetization)]
                 q.put(data)
     if printing:
@@ -276,6 +277,11 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
     
     """
     
+    # Plot configuration
+    rcParams.update({'font.size': 14})
+    rcParams.update({'lines.linewidth': 3})
+    
+    # Save parameters
     if save:
         folder = 'Beta={} H={} '.format(beta, H)
         folder = folder + '{}x{}'.format(S.shape[0], S.shape[1])
@@ -285,6 +291,7 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
     else:
         filename = None
     
+    # Initialize animation
     if full:
         results, t, q = ising_full_animation_2D(S, beta, H, nsteps, 
                                                 nplots, save, filename)
@@ -292,6 +299,7 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
         results, t, q = ising_partial_animation_2D(S, beta, H, nsteps, 
                                                    nplots, save, filename)
     
+    # Start simulation
     t.start()
     def ising():
         ising_simulation_2D(S, beta, H=H, nsteps=nsteps, q=q, results=results, 
@@ -372,7 +380,8 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots, save, filename):
     ax = fig.gca()
     
     # Plot configuration --> Spin matrix
-    plt.title(r"Spines con $\beta$={:.2f}, $H$={:.2f}".format(beta, H))
+    plt.title(r"Spines con $T$={:.1f} ".format(1/beta) + 
+              r"$J\,/\,k_B$, " + r"$H$={} $\mu_B$".format(H))
     plt.xlabel("X (u.a.)")
     plt.ylabel("Y (u.a.)")
     ax.set_xlim((0, S.shape[0]))
@@ -388,7 +397,7 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots, save, filename):
             S = S.reshape(shape)
             ax.pcolormesh(S.T)
             plt.show()
-            if i != nplots:
+            if i != nplots + 1:
                 label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
                 if save and i != 0:
                     plt.savefig(filename(i), bbox_inches='tight')
@@ -422,12 +431,12 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots, save, filename):
                 generator.send(S0)
                 next(generator)
                 fig.canvas.draw()
-                time.sleep(1)
+                time.sleep(.5)
                 break
             generator.send(S[0])
             next(generator)
             fig.canvas.draw()
-            time.sleep(1)
+            time.sleep(.5)
     t = threading.Thread(target=plot)
     
     return results, t, q
@@ -492,10 +501,11 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots, save, filename):
     
     # Figure configuration
     fig = plt.figure()
-    plt.suptitle(r"Spines con $\beta$={:.2f}, $H$={:.2f}".format(beta, H))
+    plt.suptitle(r"Spines con $T$={:.1f} ".format(1/beta) + 
+                 r"$J\,/\,k_B$, " + r"$H$={} $\mu_B$".format(H))
     mng = plt.get_current_fig_manager()
     mng.window.showMaximized()
-    grid = plt.GridSpec(2, 4, wspace=0.6, hspace=0.2)
+    grid = plt.GridSpec(2, 4, wspace=0.7, hspace=0.2)
     ax1 = plt.subplot(grid[:,:2])
     ax2 = plt.subplot(grid[0,2:])
     ax3 = plt.subplot(grid[1,2:])
@@ -511,11 +521,11 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots, save, filename):
     
     # Second plot configuration --> Medium Energy
     ax2.set_xlim((0,nsteps))
-    ax2.set_ylabel(r"Energía media $\left(\;\frac{J}{k}\right)$")
+    ax2.set_ylabel(r"Energía media ($J$)")
     
     # Third plot configuration --> Medium Magnetization
     ax3.set_xlim((0,nsteps))
-    ax3.set_ylabel(r"Magnetización media $\left(\;\frac{1}{2 \mu_B k}\right)$")
+    ax3.set_ylabel(r"Magnetización media ($\mu_B$)")
     ax3.set_xlabel("Paso (u.a.)")
 
     # Generator that will plot every time some data is passed to it
@@ -531,8 +541,7 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots, save, filename):
             ax1.pcolormesh(S.T)
             ax2.plot(range(len(E)), E, 'b')
             ax3.plot(range(len(M)), M, 'b')
-            label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
-            if i != nplots:
+            if i != nplots + 1:
                 label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
                 if save and i != 0:
                     plt.savefig(filename(i), bbox_inches='tight')
