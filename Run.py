@@ -9,18 +9,18 @@ Created on Mon Dec 10 14:24:05 2018
 # General script for a run
 
 import numpy as np
-#import matplotlib.axes
 import matplotlib.pyplot as plt
 import ising as ing
-import time
 
 #%% User's parameters
 
 Lx = 15 # x size
 Ly = 15 # y size
-#beta_critico = log(1+sqrt(2))/2 = 0.44069
 beta = 0.9 # 1/kT
 nsteps = 2000 # amount of steps
+nplots = 4
+animation = True
+full = True
 
 #%% Initial state
 
@@ -37,17 +37,22 @@ plt.ylabel("Y (u.a.)")
 
 #%% One Run
 
-start = time.time()
+if not animation:
+    Sf, energy, magnetization = ing.ising_simulation_2D(S, beta, nsteps=nsteps)
+else:
+    results = ing.ising_animation_2D(S, beta, nsteps=nsteps, 
+                                     nplots=nplots, full=full)
 
-Sf, energy, magnetization = ing.ising_simulation_2D(S, beta, nsteps=nsteps,
-                                                    animation=False,
-                                                    nplot=500)
-
-stop = time.time()
-enlapsed = stop - start
-print("Enlapsed time: {:.2f} s".format(enlapsed))
-print("Current energy: {:.2f}".format(energy[-1]))
-print("Current magnetization: {:.2f}".format(magnetization[-1]))
+#%% Final State
+    
+"""
+Watch out! Animation only fills 'results' with data once the simulation is over
+"""
+    
+if animation:
+    Sf = results['Sf']
+    energy = results['energy']
+    magnetization = results['magnetization']
 
 fig = plt.figure()
 fig.add_axes()
