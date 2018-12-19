@@ -11,13 +11,14 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
-d=np.load('Tcriticas_campo0_8_8.npz')
+d=np.load('400Temperaturas.npz')
 e= dict(zip(('beta_vector','energy_matrix','magnetization_matrix','H','npre','nsteps', "enlapsed", "N"),(d[k] for k in d)))
 
 beta_vector = e["beta_vector"]
 energy_matrix = e["energy_matrix"]
 magnetization_matrix = e["magnetization_matrix"]
-N = e["N"]
+#N = e["N"]
+N = 32
 
 mean_energy = np.zeros_like(beta_vector)
 mean_magnetization = np.zeros_like(beta_vector)
