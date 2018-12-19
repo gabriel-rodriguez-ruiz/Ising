@@ -9,9 +9,10 @@ Created on Mon Dec 10 14:30:44 2018
 import numpy as np
 from math import exp
 import matplotlib.pyplot as plt
+import os
+import queue
 import time
 import threading
-import queue
 
 #%%%%%%%%%%%%%%%%%%%%%%%%% MAIN FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
@@ -137,7 +138,7 @@ def ising_step_2D(S, beta, H, neighbours, p):
 
 #%%
 
-def ising_simulation_2D(S, beta, H=0, nsteps=1000, printing=True,
+def ising_simulation_2D(S, beta, H=0, nsteps=1000, printing=True, 
                         q=None, results=None, nplots=4):
     """Executes several steps in a Markov chain using Metropolis algorithm.
 
@@ -227,7 +228,7 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000, printing=True,
 #%%
 
 def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4, 
-                       full=False, printing=True):
+                       full=False, printing=True, save=False):
     """Executes and plots many steps in a Markov chain by Metropolis algorithm.
     
     Beware! This code uses runs on two thrads that are independent from the 
@@ -249,8 +250,11 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
     full=False : bool
         Parameter that allows full animation, which additionally includes 
         medium energy and magnetization.
-    video=False : bool
-        Parameter that saves animation as a video on the current directory.
+    printing=True : bool
+        Parameter that decides whether to print some messages or not.
+    save=False : bool
+        Parameter that allows to save each picture shown in order to later make 
+        a video or gif.
     
     Returns
     -------
@@ -263,8 +267,6 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
                 Energy as a function of the number of steps.
             magnetization : np.array
                 Magnetization as a function of the number of steps.
-            Splot : list
-                List of flatten 2D spin matrix that can be saved as a video.
     
     See Also
     --------
@@ -273,10 +275,19 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
     
     """
     
+    if save:
+        folder = 'Beta={} H={} '.format(beta, H)
+        folder = folder + '{}x{}'.format(S.shape[0], S.shape[1])
+        folder = os.path.join(os.getcwd(), 'Video', folder)
+        folder = new_dir(folder, newformat='{} ({})')
+        filename = lambda i : os.path.join(folder, '{:.0f}.png'.format(i))
+    
     if full:
-        results, t, q = ising_full_animation_2D(S, beta, H, nsteps, nplots)
+        results, t, q = ising_full_animation_2D(S, beta, H, nsteps, 
+                                                nplots, save, filename)
     else:
-        results, t, q = ising_partial_animation_2D(S, beta, H, nsteps, nplots)
+        results, t, q = ising_partial_animation_2D(S, beta, H, nsteps, 
+                                                   nplots, save, filename)
     
     t.start()
     def ising():
@@ -293,7 +304,7 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
     
 #%%%%%%%%%%%%%%%%%%%%%%% ANIMATION TOOLS %%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
-def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
+def ising_partial_animation_2D(S, beta, H, nsteps, nplots, save, filename):
     """Light animation which plots steps done by Metropolis algorithm.
     
     Beware! This code uses runs on two thrads that are independent from the 
@@ -315,8 +326,11 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
     full=False : bool
         Parameter that allows full animation, which additionally includes 
         medium energy and magnetization.
-    video=False : bool
-        Parameter that saves animation as a video on the current directory.
+    save=False : bool
+        Parameter that allows to save each picture shown in order to later make 
+        a video or gif.
+    filename : function
+        Function that designes filenames according to frame number.
     
     Returns
     -------
@@ -329,8 +343,6 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
                 Energy as a function of the number of steps.
             magnetization : np.array
                 Magnetization as a function of the number of steps.
-            Splot : list
-                List of flatten 2D spin matrix that can be saved as a video.
     t : threading.Thread
         Thread that plots
     q : queue.Queue
@@ -345,6 +357,11 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
     queue.Queue
     
     """
+    
+    # General configuration
+    S0 = S
+    shape = S0.shape
+    nstepsbetween = int(nsteps/nplots)
     
     # Figure configuration
     fig = plt.figure()
@@ -361,16 +378,22 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
                     color='r', fontsize='x-large', fontweight='bold')
 
     # Generator that will plot every time some data is passed to it
-    shape = S.shape
-    nstepsbetween = int(nsteps/nplots)
     def ising_animation_generator_2D():
         i = 0
         while True:
             S = yield # This is how you pass data to it
             S = S.reshape(shape)
             ax.pcolormesh(S.T)
-            label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
             plt.show()
+            if i != nplots + 1:
+                label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
+                if save and i != 0:
+                    plt.savefig(filename(i), bbox_inches='tight')
+            else:
+                time.sleep(2)
+                label.set_text("Paso: {:.0f}".format(0))
+                if save and i != 0:
+                    plt.savefig(filename(0), bbox_inches='tight')
             i = i + 1
             yield # Here it finishes a round and waits for the next one
     
@@ -382,8 +405,7 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
     
     # Dictionary where the results will be saved
     results = {'Sf': S, 'energy': np.zeros(nsteps+1), 
-               'magnetization': np.zeros(nsteps+1),
-               'Splot': list()}
+               'magnetization': np.zeros(nsteps+1)}
     
     # Thread that passes data to the generator
     q = queue.Queue()
@@ -393,10 +415,12 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
         while True:
             S = q.get() # Waits for data to be available
             if isinstance(S, bool):
+                generator.send(S0)
+                next(generator)
+                fig.canvas.draw()
                 break
             generator.send(S[0])
             next(generator)
-            results['Splot'].append(S[0])
             fig.canvas.draw()
     t = threading.Thread(target=plot)
     
@@ -404,7 +428,7 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots):
 
 #%%
     
-def ising_full_animation_2D(S, beta, H, nsteps, nplots):
+def ising_full_animation_2D(S, beta, H, nsteps, nplots, save, filename):
     """Light animation which plots steps done by Metropolis algorithm.
     
     Beware! This code uses runs on two thrads that are independent from the 
@@ -423,11 +447,11 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots):
         Desired amount of steps.
     nplots=4 : int, optional
         Number of plots the animation should have.
-    full=False : bool
-        Parameter that allows full animation, which additionally includes 
-        medium energy and magnetization.
-    video=False : bool
-        Parameter that saves animation as a video on the current directory.
+    save=False : bool
+        Parameter that allows to save each picture shown in order to later make 
+        a video or gif.
+    filename : function
+        Function that designes filenames according to frame number.
     
     Returns
     -------
@@ -440,8 +464,6 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots):
                 Energy as a function of the number of steps.
             magnetization : np.array
                 Magnetization as a function of the number of steps.
-            Splot : list
-                List of flatten 2D spin matrix that can be saved as a video.
     t : threading.Thread
         Thread that plots
     q : queue.Queue
@@ -456,6 +478,11 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots):
     queue.Queue
     
     """
+    
+    # General configuration
+    data0 = [S, np.array([energy_2D(S)]), np.array([np.sum(S)])]
+    shape = S.shape
+    nstepsbetween = int(nsteps/nplots)
     
     # Figure configuration
     fig = plt.figure()
@@ -486,8 +513,6 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots):
     ax3.set_xlabel("Paso (u.a.)")
 
     # Generator that will plot every time some data is passed to it
-    shape = S.shape
-    nstepsbetween = int(nsteps/nplots)
     def ising_animation_generator_2D():
         i = 0
         while True:
@@ -501,19 +526,26 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots):
             ax2.plot(range(len(E)), E, 'b')
             ax3.plot(range(len(M)), M, 'b')
             label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
+            if i != nplots + 1:
+                label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
+                if save and i != 0:
+                    plt.savefig(filename(i), bbox_inches='tight')
+            else:
+                label.set_text("Paso: {:.0f}".format(0))
+                if save and i != 0:
+                    plt.savefig(filename(0), bbox_inches='tight')
             i = i + 1
             yield
     
     # Initialization of the generator
     generator = ising_animation_generator_2D()
     generator.send(None)
-    generator.send([S, np.array([0, energy_2D(S)]), np.array([0, np.sum(S)])])
+    generator.send(data0)
     next(generator)
     
     # Dictionary where the results will be saved
     results = {'Sf': S, 'energy': np.zeros(nsteps+1), 
-               'magnetization': np.zeros(nsteps+1),
-               'Splot': list()}
+               'magnetization': np.zeros(nsteps+1)}
 
     # Thread that passes data to the generator
     q = queue.Queue()
@@ -523,14 +555,16 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots):
         while True:
             data = q.get() # Waits for data to be available
             if isinstance(data, bool):
+                generator.send(data0)
+                next(generator)
+                fig.canvas.draw()
                 break
             generator.send(data)
             next(generator)
-            results['Splot'].append(data[0])
             fig.canvas.draw()
     t = threading.Thread(target=plot)
     
-    return results, t, q       
+    return results, t, q
 
 #%%%%%%%%%%%%%%%%%%%%%%%%% UTILITIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
     
@@ -654,3 +688,50 @@ def all_immediate_neighbours_2D(shape):
             neighbours.append(immediate_neighbours_2D(shape, (i, j)))
         
     return neighbours
+
+#%%
+
+def new_dir(my_dir, newformat='{}_{}'):
+    
+    """Makes and returns a new directory to avoid overwriting.
+    
+    Takes a directory name 'my_dir' and checks whether it already 
+    exists. If it doesn't, it returns 'dirname'. If it does, it 
+    returns a related unoccupied directory name. In both cases, 
+    the returned directory is initialized.
+    
+    Parameters
+    ----------
+    my_dir : str
+        Desired directory (should also contain full path).
+    
+    Returns
+    -------
+    new_dir : str
+        New directory (contains full path)
+    
+    Yields
+    ------
+    new_dir : directory
+    
+    """
+    
+    sepformat = newformat.split('{}')
+    base = os.path.split(my_dir)[0]
+    
+    new_dir = my_dir
+    while os.path.isdir(new_dir):
+        new_dir = os.path.basename(new_dir)
+        new_dir = new_dir.split(sepformat[-2])[-1]
+        try:
+            new_dir = new_dir.split(sepformat[-1])[0]
+        except ValueError:
+            new_dir = new_dir
+        try:
+            new_dir = newformat.format(my_dir, str(int(new_dir)+1))
+        except ValueError:
+            new_dir = newformat.format(my_dir, 2)
+        new_dir = os.path.join(base, new_dir)
+    os.makedirs(new_dir)
+        
+    return new_dir

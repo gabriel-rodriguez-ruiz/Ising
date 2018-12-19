@@ -20,7 +20,8 @@ beta = 0.9 # 1/kT
 nsteps = 2000 # amount of steps
 nplots = 4
 animation = True
-full = True
+full = False
+save = True
 
 #%% Initial state
 
@@ -41,7 +42,7 @@ if not animation:
     Sf, energy, magnetization = ing.ising_simulation_2D(S, beta, nsteps=nsteps)
 else:
     results = ing.ising_animation_2D(S, beta, nsteps=nsteps, 
-                                     nplots=nplots, full=full)
+                                     nplots=nplots, full=full, save=save)
 
 #%% Final State
     
