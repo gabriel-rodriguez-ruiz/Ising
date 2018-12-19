@@ -137,7 +137,7 @@ def ising_step_2D(S, beta, H, neighbours, p):
 
 #%%
 
-def ising_simulation_2D(S, beta, H=0, nsteps=1000, 
+def ising_simulation_2D(S, beta, H=0, nsteps=1000, printing=True,
                         q=None, results=None, nplots=4):
     """Executes several steps in a Markov chain using Metropolis algorithm.
 
@@ -197,8 +197,9 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000,
     magnetization.append(np.sum(S))
     
     S = np.array(S.reshape(S.size))
-    print("Running...")
-    start = time.time()
+    if printing:
+        print("Running...")
+        start = time.time()
     for n in range(nsteps):
         p = np.array([np.random.rand() for n in range(S.size)])
         S, dE, dM = ising_step_2D(S, beta, H, neighbours, p)
@@ -207,10 +208,11 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000,
         if animation:
             if n != 0 and not bool((n+1) % nstepsbetween):
                 q.put([S, energy, magnetization])
-    end = time.time()
-    print("Done running :)")
+    if printing:
+        end = time.time()
+        print("Done running :)")
+        print("Enlapsed: {:.2f} s".format(end-start))
     S = S.reshape(shape)
-    print("Enlapsed: {:.2f} s".format(end-start))
     
     energy = np.array(energy)
     magnetization = np.array(magnetization)
@@ -224,7 +226,8 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000,
 
 #%%
 
-def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4, full=False):
+def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4, 
+                       full=False, printing=True):
     """Executes and plots many steps in a Markov chain by Metropolis algorithm.
     
     Beware! This code uses runs on two thrads that are independent from the 
@@ -277,11 +280,13 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4, full=False):
     
     t.start()
     def ising():
-        ising_simulation_2D(S, beta, H, nsteps, q, results, nplots)
+        ising_simulation_2D(S, beta, H=H, nsteps=nsteps, q=q, results=results, 
+                            nplots=nplots, printing=printing)
         q.put(False)
     t2 = threading.Thread(target=ising)
     time.sleep(1)
-    print("Beware! You must wait for the simulation to end.")
+    if printing:
+        print("Beware! You must wait for the simulation to end.")
     t2.start()
     
     return results
