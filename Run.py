@@ -14,13 +14,13 @@ import ising as ing
 
 #%% User's parameters
 
-Lx = 15 # x size
-Ly = 15 # y size
+Lx = 32 # x size
+Ly = 32 # y size
 beta = 0.9 # 1/kT
-nsteps = 2000 # amount of steps
-nplots = 4
+nsteps = 20 # amount of steps
+nplots = 20
 animation = True
-full = False
+full = True
 save = True
 
 #%% Initial state
@@ -28,13 +28,14 @@ save = True
 # S is a random matrix whose elements are 1 or -1 (spin projections)
 S = ing.initial_condition_2D('hot', (Lx, Ly))
 
-fig = plt.figure()
-fig.add_axes()
-ax = fig.gca()
-ax.pcolormesh(S.T)
-plt.title("Estado inicial")
-plt.xlabel("X (u.a.)")
-plt.ylabel("Y (u.a.)")
+if not animation:
+    fig = plt.figure()
+    fig.add_axes()
+    ax = fig.gca()
+    ax.pcolormesh(S.T)
+    plt.title("Estado inicial")
+    plt.xlabel("X (u.a.)")
+    plt.ylabel("Y (u.a.)")
 
 #%% One Run
 

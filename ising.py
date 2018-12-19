@@ -208,7 +208,8 @@ def ising_simulation_2D(S, beta, H=0, nsteps=1000, printing=True,
         magnetization.append(magnetization[-1] + dM)
         if animation:
             if n != 0 and not bool((n+1) % nstepsbetween):
-                q.put([S, energy, magnetization])
+                data = [np.array(S), np.array(energy), np.array(magnetization)]
+                q.put(data)
     if printing:
         end = time.time()
         print("Done running :)")
@@ -281,6 +282,8 @@ def ising_animation_2D(S, beta, H=0, nsteps=1000, nplots=4,
         folder = os.path.join(os.getcwd(), 'Video', folder)
         folder = new_dir(folder, newformat='{} ({})')
         filename = lambda i : os.path.join(folder, '{:.0f}.png'.format(i))
+    else:
+        filename = None
     
     if full:
         results, t, q = ising_full_animation_2D(S, beta, H, nsteps, 
@@ -385,7 +388,7 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots, save, filename):
             S = S.reshape(shape)
             ax.pcolormesh(S.T)
             plt.show()
-            if i != nplots + 1:
+            if i != nplots:
                 label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
                 if save and i != 0:
                     plt.savefig(filename(i), bbox_inches='tight')
@@ -412,16 +415,19 @@ def ising_partial_animation_2D(S, beta, H, nsteps, nplots, save, filename):
     fig = plt.gcf()
     def plot():
         plt.ion()
+        time.sleep(2)
         while True:
             S = q.get() # Waits for data to be available
             if isinstance(S, bool):
                 generator.send(S0)
                 next(generator)
                 fig.canvas.draw()
+                time.sleep(1)
                 break
             generator.send(S[0])
             next(generator)
             fig.canvas.draw()
+            time.sleep(1)
     t = threading.Thread(target=plot)
     
     return results, t, q
@@ -526,7 +532,7 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots, save, filename):
             ax2.plot(range(len(E)), E, 'b')
             ax3.plot(range(len(M)), M, 'b')
             label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
-            if i != nplots + 1:
+            if i != nplots:
                 label.set_text("Paso: {:.0f}".format(i*nstepsbetween))
                 if save and i != 0:
                     plt.savefig(filename(i), bbox_inches='tight')
@@ -552,14 +558,17 @@ def ising_full_animation_2D(S, beta, H, nsteps, nplots, save, filename):
     fig = plt.gcf()
     def plot():
         plt.ion()
+        time.sleep(2)
         while True:
             data = q.get() # Waits for data to be available
             if isinstance(data, bool):
                 generator.send(data0)
+                time.sleep(1)
                 next(generator)
                 fig.canvas.draw()
                 break
             generator.send(data)
+            time.sleep(1)
             next(generator)
             fig.canvas.draw()
     t = threading.Thread(target=plot)
